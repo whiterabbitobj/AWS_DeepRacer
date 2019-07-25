@@ -27,7 +27,7 @@ def reward_function(params):
     #USER SET PARAMS
     std_dev = .25
     mean = 0
-    MAX_SPEED = 4.0
+    MAX_SPEED = 8.0
     STEERING_THRESHOLD = 30
 
     #NORMAL DISTRIBUTION PARAMS
@@ -35,6 +35,8 @@ def reward_function(params):
     pi = 3.14159
     sqrt_2pi = 2.50663
     first_term = 1 / (std_dev * sqrt_2pi)
+
+    ##############################################################
 
     #POSITIONING REWARD
     # give a higher reward for being closer to the center of the
@@ -46,15 +48,16 @@ def reward_function(params):
     #STEERING SMOOTHNESS REWARD
     # give a higher reward for less extreme steering
     x = steering / STEERING_THRESHOLD
-    steering_exp_denom = 2 * (std_dev**2)
-    steering_reward = first_term * (e**-(((x-mean)**6) / steering_exp_denom) / 1.6)
-
+    steering_exp_denom = 2 * (std_dev**1.75)
+    steering_reward = first_term * (e**-(((abs(x)-mean)**3) / steering_exp_denom) / 1.6)
 
     #SPEED REWARD
     # give a higher reward if the speed is higher
     x = speed / MAX_SPEED
-    speed_exp_denom = 2 * (std_dev**2)
+    speed_exp_denom = 2 * (std_dev**1.5)
     speed_reward = -first_term * (e**-(((x-mean)**2) / speed_exp_denom) / 1.6) + 1
+
+    ##############################################################
 
     #CALCULATE OVERALL REWARD
     # overall reward is the weighted average of the speed, positioning, and
@@ -62,6 +65,6 @@ def reward_function(params):
     pos_weight = 0.2
     steering_weight = 0.3
     speed_weight = 0.5
-    reward = pos_weight * pos_reward + steering_weight * steering_reward + speed_weight * speed_reward
+    reward = (pos_weight * pos_reward) + (steering_weight * steering_reward) + (speed_weight * speed_reward)
 
     return float(reward)
