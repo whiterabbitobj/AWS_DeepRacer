@@ -7,7 +7,7 @@ def reward_function(params):
     #params['x'] (FLOAT)
     #params['y'] (FLOAT)
     #params['all_wheels_on_track'] (BOOL)
-    #params['distance_from_center'] (FLOAT)
+    #params['distance_from_center'] (FLOAT) [0 - track_width/2]
     #params['is_left_of_center'] (BOOL) (true if left, false if right)
     #params['heading'] (FLOAT) [-180,180]
     #params['progress'] (FLOAT) [0-100]
@@ -21,28 +21,47 @@ def reward_function(params):
     # Read input parameters
     distance_from_center = params['distance_from_center']
     track_width = params['track_width']
-    steering = abs(params['steering_angle']) # Only need the absolute steering angle
+    steering = abs(params['steering_angle'])
+    speed = params['speed']
 
-    # Calculate 3 markers that are at varying distances away from the center line
-    marker_1 = 0.1 * track_width
-    marker_2 = 0.25 * track_width
-    marker_3 = 0.5 * track_width
+    #USER SET PARAMS
+    std_dev = .25
+    mean = 0
+    MAX_SPEED = 4.0
+    STEERING_THRESHOLD = 30
 
-    # Give higher reward if the agent is closer to center line and vice versa
-    if distance_from_center <= marker_1:
-        reward = 1
-    elif distance_from_center <= marker_2:
-        reward = 0.5
-    elif distance_from_center <= marker_3:
-        reward = 0.1
-    else:
-        reward = 1e-3  # likely crashed/ close to off track
+    #NORMAL DISTRIBUTION PARAMS
+    e = 2.71828
+    pi = 3.14159
+    sqrt_2pi = 2.50663
+    first_term = 1 / (std_dev * sqrt_2pi)
 
-    # Steering penality threshold, change the number based on your action space setting
-    ABS_STEERING_THRESHOLD = 15
+    #POSITIONING REWARD
+    # give a higher reward for being closer to the center of the
+    # track
+    x = distance_from_center / (track_width / 2)
+    pos_exp_denom = 2 * (std_dev**1.5)
+    pos_reward = first_term * (e**-( ((x-mean)**4) / pos_exp_denom) / 1.6)
 
-    # Penalize reward if the agent is steering too much
-    if steering > ABS_STEERING_THRESHOLD:
-        reward *= 0.8
+    #STEERING SMOOTHNESS REWARD
+    # give a higher reward for less extreme steering
+    x = steering / STEERING_THRESHOLD
+    steering_exp_denom = 2 * (std_dev**2)
+    steering_reward = first_term * (e**-(((x-mean)**6) / steering_exp_denom) / 1.6)
+
+
+    #SPEED REWARD
+    # give a higher reward if the speed is higher
+    x = speed / MAX_SPEED
+    speed_exp_denom = 2 * (std_dev**2)
+    speed_reward = -first_term * (e**-(((x-mean)**2) / speed_exp_denom) / 1.6) + 1
+
+    #CALCULATE OVERALL REWARD
+    # overall reward is the weighted average of the speed, positioning, and
+    # steering correcting reward values
+    pos_weight = 0.2
+    steering_weight = 0.3
+    speed_weight = 0.5
+    reward = pos_weight * pos_reward + steering_weight * steering_reward + speed_weight * speed_reward
 
     return float(reward)
