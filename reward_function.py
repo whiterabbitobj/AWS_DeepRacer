@@ -43,28 +43,29 @@ def reward_function(params):
     # track
     x = distance_from_center / (track_width / 2)
     pos_exp_denom = 2 * (std_dev**1.5)
-    pos_reward = first_term * (e**-( ((x-mean)**4) / pos_exp_denom) / 1.6)
+    pos_reward = first_term * (e**-( ((abs(x)-mean)**3) / pos_exp_denom) / 1.6)
 
     #STEERING SMOOTHNESS REWARD
     # give a higher reward for less extreme steering
     x = steering / STEERING_THRESHOLD
-    steering_exp_denom = 2 * (std_dev**1.75)
+    steering_exp_denom = 2 * (std_dev**2.2)
     steering_reward = first_term * (e**-(((abs(x)-mean)**3) / steering_exp_denom) / 1.6)
 
     #SPEED REWARD
     # give a higher reward if the speed is higher
     x = speed / MAX_SPEED
-    speed_exp_denom = 2 * (std_dev**1.5)
-    speed_reward = -first_term * (e**-(((x-mean)**2) / speed_exp_denom) / 1.6) + 1
+    speed_exp_denom = 2 * (std_dev**2)
+    multiplier = 1.6
+    speed_reward = multiplier * (-first_term * (e**-(((abs(x)-mean)**2) / speed_exp_denom) / 1.6) + 1)
 
     ##############################################################
 
     #CALCULATE OVERALL REWARD
     # overall reward is the weighted average of the speed, positioning, and
     # steering correcting reward values
-    pos_weight = 0.2
+    pos_weight = 0.4
     steering_weight = 0.3
-    speed_weight = 0.5
+    speed_weight = 0.3
     reward = (pos_weight * pos_reward) + (steering_weight * steering_reward) + (speed_weight * speed_reward)
 
     return float(reward)
